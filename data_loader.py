@@ -50,10 +50,7 @@ class RandomResizedCropWithAutoCenteringAndZeroPadding (object):
 
     def __call__(self, sample):
         imidx, image = sample['imidx'], sample["image_np"]
-        if "labels" in sample:
-            label = sample["labels"]
-        else:
-            label = None
+        label = sample["labels"] if "labels" in sample else None
         im_h, im_w = image.shape[:2]
         if self.size_from_alpha_mask and image.shape[2] == 4:
             # compute bbox from alpha mask
@@ -100,7 +97,7 @@ class RandomResizedCropWithAutoCenteringAndZeroPadding (object):
         if target_aspect_ratio < source_aspect_ratio:
             # same w, target has larger h, use h to align
             target_height = bbox_h * \
-                np.random.uniform(self.scale[0], self.scale[1])
+                    np.random.uniform(self.scale[0], self.scale[1])
             virtual_h = int(
                 round(target_height))
             virtual_w = int(
@@ -108,7 +105,7 @@ class RandomResizedCropWithAutoCenteringAndZeroPadding (object):
         else:
             # same w, source has larger h, use w to align
             target_width = bbox_w * \
-                np.random.uniform(self.scale[0], self.scale[1])
+                    np.random.uniform(self.scale[0], self.scale[1])
             virtual_h = int(
                 round(target_width * target_aspect_ratio))  # h/w
             virtual_w = int(
@@ -170,13 +167,12 @@ class RandomResizedCropWithAutoCenteringAndZeroPadding (object):
                 image = rgb2lin(image)
                 image = cv2.resize(
                     image, (self.output_size[1], self.output_size[0]), interpolation=cv2.INTER_LINEAR)
-                image = lin2rgb(image)
             else:
                 # shrinking
                 image = rgb2lin(image)
                 image = cv2.resize(
                     image, (self.output_size[1], self.output_size[0]), interpolation=cv2.INTER_AREA)
-                image = lin2rgb(image)
+            image = lin2rgb(image)
             if label is not None:
                 label = cv2.resize(label, (self.output_size[1], self.output_size[0]),
                                    interpolation=cv2.INTER_NEAREST_EXACT)
@@ -265,12 +261,13 @@ class FileDataset(Dataset):
             'imidx': np.array([idx])}
         target = self.get_gt_from_disk(
             idx, imname=self.image_name_list[idx][0], read_label=self.shader_pose_use_gt_udp_test)
-        if self.shader_target_use_gt_rgb_debug:
+        if (
+            self.shader_target_use_gt_rgb_debug
+            or not self.shader_pose_use_gt_udp_test
+        ):
             sample["pose_images"] = torch.stack([target["image"]])
-        elif self.shader_pose_use_gt_udp_test:
-            sample["pose_label"] = target["labels"]
         else:
-            sample["pose_images"] = torch.stack([target["image"]])
+            sample["pose_label"] = target["labels"]
         if "crop" in target:
             sample["pose_crop"] = target["crop"]
         sample["pose_mask"] = target["mask"]
@@ -283,9 +280,9 @@ class FileDataset(Dataset):
             character_masks.append(source["mask"])
         character_images = torch.stack(character_images)
         character_masks = torch.stack(character_masks)
-        sample.update({
+        sample |= {
             "character_images": character_images,
-            "character_masks": character_masks
-        })
+            "character_masks": character_masks,
+        }
         # do not make fake labels in inference
         return sample

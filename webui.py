@@ -55,7 +55,7 @@ if __name__ == "__main__":
         Path("results").mkdir(parents=True, exist_ok=True)
         if examples is not None and examples != "":
             poses = Path(examples)
-            character = Path(examples+"_images")
+            character = Path(f"{examples}_images")
 
         else:
             for i, e in enumerate(character_sheets):
@@ -65,19 +65,18 @@ if __name__ == "__main__":
                     e.seek(0)
             poses = Path("./MMD2UDP/output")
             character = Path("./character_sheet")
-            if mmd_pmx is not None:
-                with open("./MMD2UDP/model.zip", "wb") as f:
-                    mmd_pmx.seek(0)
-                    f.write(mmd_pmx.read())
-                    mmd_pmx.seek(0)
-            else:
+            if mmd_pmx is None:
                 return Lang["NO_PMX"], None
+            with open("./MMD2UDP/model.zip", "wb") as f:
+                mmd_pmx.seek(0)
+                f.write(mmd_pmx.read())
+                mmd_pmx.seek(0)
             if mmd_motion is not None:
                 with open("./MMD2UDP/motion.vmd", "wb") as f:
                     mmd_motion.seek(0)
                     f.write(mmd_motion.read())
                     mmd_motion.seek(0)
-           
+
             if mmd_camera is not None:
                 with open("./MMD2UDP/camera.vmd", "wb") as f:
                     mmd_camera.seek(0)
@@ -90,23 +89,23 @@ if __name__ == "__main__":
             else:
                 os.system("udp")
             os.chdir(cwd)
-        if len(list(poses.glob("*"))) == 0:
+        if not list(poses.glob("*")):
             return Lang["NO_UDP"], None
 
-        else:
-            ret = os.system(
-                "python train.py --test_input_poses_images={} --test_input_person_images={}".format(poses, character))
+        ret = os.system(
+            f"python train.py --test_input_poses_images={poses} --test_input_person_images={character}"
+        )
 
-            if ret != 0:
-                return Lang["GEN_FAIL"], None
-            torun = 'ffmpeg -r 30 -y -i ./results/%d.png -i watermark.png -filter_complex "overlay=x=(main_w-overlay_w)/2:y=(overlay_h)/2" -c:v libx264 -strict -2 -pix_fmt yuv420p output.mp4'
+        if ret != 0:
+            return Lang["GEN_FAIL"], None
+        torun = 'ffmpeg -r 30 -y -i ./results/%d.png -i watermark.png -filter_complex "overlay=x=(main_w-overlay_w)/2:y=(overlay_h)/2" -c:v libx264 -strict -2 -pix_fmt yuv420p output.mp4'
 
-            ret = os.system(torun)
-            if ret != 0:
-                return Lang["CONV_FAIL"], None
+        ret = os.system(torun)
+        if ret != 0:
+            return Lang["CONV_FAIL"], None
 
-            torun = 'ffmpeg -r 30 -y -i ./results/%d.png -i watermark.png -filter_complex "overlay=x=(main_w-overlay_w)/2:y=(overlay_h)/2" -c:v qtrle output_adobe_premiere.mov'
-            ret = os.system(torun)
+        torun = 'ffmpeg -r 30 -y -i ./results/%d.png -i watermark.png -filter_complex "overlay=x=(main_w-overlay_w)/2:y=(overlay_h)/2" -c:v qtrle output_adobe_premiere.mov'
+        ret = os.system(torun)
 
         return Lang["DONE"], "output.mp4"
 

@@ -7,7 +7,7 @@ backwarp_tenGrid = {}
 class ResBlock(nn.Module):
     def __init__(self, main, skip=None):
         super().__init__()
-        self.skip = skip if skip else nn.Identity()
+        self.skip = skip or nn.Identity()
         self.main = nn.Sequential(*main)
 
     def forward(self, input):
@@ -42,15 +42,14 @@ class SelfAtt2d(nn.Module):
         scale = k.shape[3]**-0.25
         att = ((q * scale) @ (k.transpose(2, 3) * scale)).softmax(3)
         y = (att @ v).transpose(2, 3).contiguous().view([n, c, h, w])
-        out = input + self.out_proj(y)
-        return out
+        return input + self.out_proj(y)
 
 
 class SkipBlock(nn.Module):
     def __init__(self, main, skip=None):
         super().__init__()
         self.main = nn.Sequential(*main)
-        self.skip = skip if skip else nn.Identity()
+        self.skip = skip or nn.Identity()
 
     def forward(self, input):
         return torch.cat([self.skip(input), self.main(input)], dim=1)
