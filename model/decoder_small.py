@@ -38,7 +38,8 @@ class RGBADecoderNet(nn.Module):
         self.bottleneck = torch.nn.Sequential()
         for i in range(num_bottleneck_blocks):
             self.bottleneck.add_module(
-                'r' + str(i), ResConv2d(c, kernel_size=(3, 3), padding=(1, 1)))
+                f'r{str(i)}', ResConv2d(c, kernel_size=(3, 3), padding=(1, 1))
+            )
 
     def forward(self, out):
         return torch.sigmoid(self.conv_rgba(self.bottleneck(out)))

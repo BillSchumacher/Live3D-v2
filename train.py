@@ -19,7 +19,7 @@ class Compose:
         return img
 
     def __repr__(self) -> str:
-        format_string = self.__class__.__name__ + "("
+        format_string = f"{self.__class__.__name__}("
         for t in self.transforms:
             format_string += "\n"
             format_string += f"    {t}"
@@ -62,7 +62,7 @@ def save_output(image_name, inputs_v, d_dir=".", crop=None):
                                                                            crop[7], crop[8]:before_resize_scale.shape[1]-crop[9]]
     else:
         output_img = out_render_scale
-    output_path = Path(d_dir) / (image_name.split(os.sep)[-1]+'.png')
+    output_path = Path(d_dir) / f'{image_name.split(os.sep)[-1]}.png'
     # make parent dir for it
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(output_path), output_img)
@@ -71,14 +71,14 @@ def save_output(image_name, inputs_v, d_dir=".", crop=None):
 def test():
     source_names_list = sorted([str(each) for each in Path(args.test_input_person_images).rglob('*.[PpWw][NnEe][GgBb]*')])
     print("character sheet:", source_names_list)
-    
+
     image_names_list = []
     for name in sorted(os.listdir(args.test_input_poses_images)):
         thistarget = os.path.join(args.test_input_poses_images, name)
         if os.path.isfile(thistarget):
             image_names_list.append([thistarget, *source_names_list])
         if os.path.isdir(thistarget):
-            print("skipping folder :"+thistarget)
+            print(f"skipping folder :{thistarget}")
 
     humanflowmodel = CoNR(args)
     humanflowmodel.load_model(path=args.test_checkpoint_dir)
@@ -126,7 +126,7 @@ def infer(args, humanflowmodel, image_names_list):
         train_time_interval = time.time() - time_stamp
         time_stamp = time.time()
         if args.local_rank == 0:
-            pbar.set_description(f"Infer")
+            pbar.set_description("Infer")
             pbar.set_postfix({"data_time": data_time_interval,
                              "train_time": train_time_interval})
             pbar.update(1)

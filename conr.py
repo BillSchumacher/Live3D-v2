@@ -44,12 +44,15 @@ class CoNR():
 
     def load_model(self, path):
         self.cinnnet.load_state_dict(
-            torch.load('{}/cinnnet.pth'.format(path), map_location=device))
+            torch.load(f'{path}/cinnnet.pth', map_location=device)
+        )
         self.udpadecodernet.load_state_dict(
-            torch.load('{}/udpadecodernet.pth'.format(path), map_location=device))
+            torch.load(f'{path}/udpadecodernet.pth', map_location=device)
+        )
         self.rgbadecodernet.load_state_dict(
-            torch.load('{}/rgbadecodernet.pth'.format(path), map_location=device))
-        self.optimizer_path = '{}/optimizer.pth'.format(path)
+            torch.load(f'{path}/rgbadecodernet.pth', map_location=device)
+        )
+        self.optimizer_path = f'{path}/optimizer.pth'
 
     def train(self):
         self.cinnnet.train()
@@ -107,17 +110,12 @@ class CoNR():
         return pred
 
     def shader_forward(self, data, pred, stage=0):
-        if stage == 0:
-            shader_stage = "shader"
-        else:
-            shader_stage = "shader_{}".format(stage)
-        shader_stage_last = "shader_{}".format(stage+1)
+        shader_stage = "shader" if stage == 0 else f"shader_{stage}"
+        shader_stage_last = f"shader_{stage + 1}"
         pred[shader_stage] = {}
         shader_target_sudp = pred["pose_parser"]["pred"][:, 0:3, :,
                                                          :] if "pose_parser" in pred and "pred" in pred["pose_parser"] else None
-        shader_target_a = None
-        if "pose_mask" in data:
-            shader_target_a = data["pose_mask"]
+        shader_target_a = data["pose_mask"] if "pose_mask" in data else None
         if "pose_label" in data:
             shader_target_sudp = data["pose_label"][:, :3, :, :]
         if shader_target_a is None:
@@ -187,7 +185,7 @@ class CoNR():
         return pred
 
     def character_parser_forward(self, data, pred):
-        if not("num_character_images" in data and "character_images" in data):
+        if "num_character_images" not in data or "character_images" not in data:
             return pred
         pred["parser"] = {"pred": None}
 
@@ -210,7 +208,7 @@ class CoNR():
         return pred
 
     def pose_parser_sc_forward(self, data, pred):
-        if not("num_pose_images" in data and "pose_images" in data):
+        if "num_pose_images" not in data or "pose_images" not in data:
             return pred
         inputs_aug_rgb_nmchw, inputs_label_a_nchw, num_samples, num_pose_images = data[
             "pose_images"],  data["pose_mask"], data["num_samples"], data["num_pose_images"]
